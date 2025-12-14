@@ -2,56 +2,88 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Colagem Arquitetura Editorial</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BASE PRO - Editorial Layout</title>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
+/* --- VARIÁVEIS & RESET --- */
+:root {
+  --bg-color: #0a0a0a;
+  --card-bg: #ffffff;
+  --accent-color: #1f4fff; /* Azul BASE PRO */
+  --text-primary: #111;
+  --text-light: #fff;
+  --spacing: 2rem;
 }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  background: #0b0b0b;
+  background-color: var(--bg-color);
+  color: var(--text-light);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  color: #fff;
-}
-
-/* TEXTO DE FUNDO */
-.background-text {
-  position: absolute;
-  inset: 0;
-  font-size: 72px;
-  font-weight: 900;
-  letter-spacing: 4px;
-  color: rgba(255,255,255,0.05);
-  line-height: 1.2;
-  padding: 40px;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* CANVAS */
-.canvas {
+  overflow-x: hidden;
   position: relative;
-  width: 1200px;
-  height: 820px;
-  z-index: 2;
 }
 
-/* CARDS */
+/* --- EFEITO DE TEXTURA (NOISE) --- */
+/* Dá aquele aspecto de papel de revista/editorial */
+.noise-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* --- TEXTO DE FUNDO (MARQUEE) --- */
+.background-text {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  width: 150vw;
+  font-size: clamp(3rem, 8vw, 10rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,0.1);
+  line-height: 1;
+  z-index: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* --- CONTAINER PRINCIPAL (GRID) --- */
+main {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing);
+  
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+/* --- ESTILO DOS CARDS --- */
 .card {
-  position: absolute;
-  border: 10px solid #fff;
-  background: #fff;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-  overflow: hidden;
+  position: relative;
+  background: var(--card-bg);
+  padding: 10px; /* Borda branca grossa */
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card:hover {
+  transform: scale(1.02) rotate(0deg) !important; /* Reset rotação no hover */
+  z-index: 10;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.7);
 }
 
 .card img {
@@ -59,89 +91,88 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
+  filter: grayscale(100%); /* Estilo Vignelli p&b */
+  transition: filter 0.4s ease;
 }
 
-/* POSIÇÕES DAS IMAGENS */
-.img1 {
-  width: 430px;
-  height: 560px;
-  top: 40px;
-  left: 40px;
-  transform: rotate(-6deg);
+.card:hover img {
+  filter: grayscale(0%);
 }
 
-.img2 {
-  width: 400px;
-  height: 500px;
-  top: 20px;
-  right: 40px;
-  transform: rotate(7deg);
-}
-
-.img3 {
-  width: 380px;
-  height: 450px;
-  bottom: 40px;
-  right: 80px;
-  transform: rotate(-4deg);
-}
-
-.img4 {
-  width: 360px;
-  height: 420px;
-  bottom: 80px;
-  left: 120px;
-  transform: rotate(6deg);
-}
-
-/* TEXTO CENTRAL */
+/* --- CARD DE TEXTO (CENTRAL) --- */
 .text-card {
-  width: 440px;
-  height: 440px;
-  background: #1f4fff;
-  color: #fff;
-  padding: 36px;
-  top: 190px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-2deg);
+  background: var(--accent-color);
+  color: var(--text-light);
+  padding: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  border: none; /* Sem borda branca no azul */
 }
 
 .text-card h1 {
-  font-size: 34px;
+  font-size: clamp(1.5rem, 2.5vw, 2.5rem);
   line-height: 1.1;
-  font-weight: 900;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: -0.05em;
 }
 
-.text-card h1 span {
+.text-card .highlight {
   display: block;
-  margin-top: 12px;
-}
-
-.highlight {
-  font-size: 40px;
+  font-size: clamp(2rem, 3.5vw, 3.5rem);
+  margin: 0.5rem 0;
+  color: #fff; /* Destaque puro */
 }
 
 .underline {
-  width: 90px;
-  height: 4px;
+  width: 60px;
+  height: 6px;
   background: #fff;
-  margin-top: 22px;
+  margin-top: 2rem;
 }
 
-/* RESPONSIVO */
-@media (max-width: 1000px) {
-  .canvas {
-    transform: scale(0.85);
+/* --- LAYOUT DESKTOP (A COLAGEM) --- */
+@media (min-width: 1024px) {
+  main {
+    height: 100vh;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(12, 1fr);
+    gap: 0;
+    padding: 4rem;
   }
-}
 
-@media (max-width: 700px) {
-  .canvas {
-    transform: scale(0.65);
+  /* Posicionamento Manual no Grid para criar sobreposição */
+  .photo-1 {
+    grid-column: 2 / 5;
+    grid-row: 2 / 8;
+    transform: rotate(-6deg);
+  }
+
+  .photo-2 {
+    grid-column: 9 / 12;
+    grid-row: 1 / 7;
+    transform: rotate(7deg);
+  }
+
+  .photo-3 {
+    grid-column: 8 / 11;
+    grid-row: 7 / 12;
+    transform: rotate(-4deg);
+    z-index: 3;
+  }
+
+  .photo-4 {
+    grid-column: 2 / 5;
+    grid-row: 8 / 12;
+    transform: rotate(5deg);
+  }
+
+  .text-main {
+    grid-column: 5 / 9;
+    grid-row: 4 / 9;
+    transform: rotate(-2deg);
+    z-index: 5; /* Sempre no topo */
   }
 }
 </style>
@@ -149,43 +180,40 @@ body {
 
 <body>
 
-<!-- TEXTO FANTASMA DE FUNDO -->
-<div class="background-text">
-ARQUITETURA VISUAL — DESIGN — ESTRUTURA — PROJETO — CONSTRUÇÃO — URBANO —<br>
-ARQUITETURA VISUAL — DESIGN — ESTRUTURA — PROJETO — CONSTRUÇÃO — URBANO —<br>
-ARQUITETURA VISUAL — DESIGN — ESTRUTURA — PROJETO — CONSTRUÇÃO — URBANO —
-</div>
+  <div class="noise-overlay"></div>
 
-<div class="canvas">
-
-  <div class="card img1">
-    <img src="https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=1200&q=80">
+  <div class="background-text">
+    Design • Estrutura • Visual<br>
+    Architecture • Digital • Base
   </div>
 
-  <div class="card img2">
-    <img src="https://images.unsplash.com/photo-1486308510493-aa64833637b9?auto=format&fit=crop&w=1200&q=80">
-  </div>
+  <main>
+    <figure class="card photo-1">
+      <img src="https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=800&q=80" alt="Arquitetura Minimalista">
+    </figure>
 
-  <div class="card img3">
-    <img src="https://images.unsplash.com/photo-1529429617124-95b109e86bb8?auto=format&fit=crop&w=1200&q=80">
-  </div>
+    <figure class="card photo-2">
+      <img src="https://images.unsplash.com/photo-1486308510493-aa64833637b9?auto=format&fit=crop&w=800&q=80" alt="Estrutura Urbana">
+    </figure>
 
-  <div class="card img4">
-    <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80">
-  </div>
+    <article class="card text-card text-main">
+      <h1>
+        Como eu vou entregar
+        <span class="highlight">Arquitetura Visual</span>
+        se esse é o mínimo de
+        <span>estrutura que eu uso</span>?
+      </h1>
+      <div class="underline"></div>
+    </article>
 
-  <div class="card text-card">
-    <h1>
-      Como eu vou entregar
-      <span class="highlight">Arquitetura Visual</span>
-      se esse é o mínimo de
-      <span>estrutura que eu uso</span>
-      em um projeto?
-    </h1>
-    <div class="underline"></div>
-  </div>
+    <figure class="card photo-3">
+      <img src="https://images.unsplash.com/photo-1529429617124-95b109e86bb8?auto=format&fit=crop&w=800&q=80" alt="Detalhe Concreto">
+    </figure>
 
-</div>
+    <figure class="card photo-4">
+      <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=80" alt="Geometria Predial">
+    </figure>
+  </main>
 
 </body>
 </html>
