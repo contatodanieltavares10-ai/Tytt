@@ -3,224 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mockup Base Agência</title>
+    <title>Poster Base Azul</title>
     <style>
-        /* ZERAR TUDO PARA NÃO TER ESPAÇOS INDESEJADOS */
+        /* ZERA TUDO */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #000;
-            height: 100vh;
+            background-color: #111; /* Fundo escuro fora do poster */
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
             overflow: hidden;
-            font-family: 'Arial Black', 'Impact', sans-serif; /* Fontes pesadas */
         }
 
-        /* CONTAINER QUE LIMITA O MOCKUP AO TAMANHO DA FOTO */
-        .mockup-scene {
+        /* O POSTER EM SI */
+        .poster {
             position: relative;
             width: 100%;
-            max-width: 650px; /* Largura similar a um story/celular */
-            aspect-ratio: 9/16; /* Proporção vertical de celular */
-            box-shadow: 0 0 50px rgba(255, 69, 0, 0.2);
-        }
-
-        /* 1. A IMAGEM DE FUNDO (CADEIRA) */
-        .bg-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0; left: 0;
-            z-index: 1;
-
-            /* FILTRO: Transforma o azul em preto brilhante (plástico) */
-            /* Grayscale: remove cor | Contrast: realça o brilho do plástico | Brightness: escurece */
-            filter: grayscale(100%) contrast(150%) brightness(35%); 
-        }
-
-        /* 2. O PÔSTER LARANJA (PERSPECTIVA) */
-        .poster-container {
-            position: absolute;
-            top: 15%;       /* Posição vertical */
-            left: 18%;      /* Posição horizontal */
-            width: 65%;     /* Largura do papel */
-            height: 65%;    /* Altura do papel */
-            z-index: 2;
-            
-            /* ATIVAR 3D */
-            perspective: 1000px;
-        }
-
-        .poster-content {
-            width: 100%;
-            height: 100%;
-            background-color: #ff4500; /* Laranja BASE */
-            
-            /* ROTAÇÃO PARA ENCAIXAR NA CADEIRA */
-            /* Se estiver torto, ajuste estes números levemente */
-            transform: rotateX(12deg) rotateY(-4deg) rotateZ(-3.5deg);
-            
-            padding: 20px;
+            max-width: 500px; /* Largura de celular */
+            aspect-ratio: 4/5; /* Formato do Instagram vertical */
+            background-color: #001aff; /* AQUELE AZUL ELÉTRICO DA REFERÊNCIA */
+            overflow: hidden; /* Corta o que sair pra fora */
             display: flex;
             flex-direction: column;
-            color: white;
-            box-shadow: 10px 20px 50px rgba(0,0,0,0.8); /* Sombra realista atrás */
-            
-            /* Textura granulada sutil para parecer papel impresso */
-            background-image: radial-gradient(circle, transparent 20%, #000 120%);
-        }
-
-        /* TIPOGRAFIA GIGANTE (IGUAL REFERÊNCIA) */
-        .text-block {
-            font-size: clamp(40px, 11vw, 80px); /* Responsivo */
-            line-height: 0.85; /* Linhas coladas uma na outra */
-            letter-spacing: -2px; /* Letras coladas */
-            text-transform: uppercase;
-            text-align: left;
-            margin-top: 10px;
-        }
-
-        /* EFEITO DE TEXTO CORTADO/GRUNGE (Opcional, dá realismo) */
-        .text-block span {
-            display: block;
-            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-        }
-
-        /* TEXTO MANUSCRITO "FEITOS AQUI" */
-        .handwritten {
-            position: absolute;
-            bottom: 25%;
-            left: 10%;
-            font-family: 'Brush Script MT', cursive;
-            color: #111; /* Preto para contraste no laranja */
-            font-size: clamp(30px, 8vw, 60px);
-            transform: rotate(-15deg);
-            line-height: 0.8;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.2);
-            z-index: 5;
-        }
-
-        .blue-tag {
-            color: #0044ff; /* Azul da caneta */
-        }
-
-        /* 3. OS CARDS DE ARQUIVO (POSICIONADOS IGUAL A REFERÊNCIA) */
-        .file-card {
-            position: absolute;
-            background: #fff;
-            padding: 3px;
-            width: 80px;
-            height: 95px;
-            z-index: 10; /* Fica acima do poster */
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-            border-radius: 4px;
-            transition: transform 0.2s;
-        }
-
-        .file-card:hover { transform: scale(1.2); z-index: 100; }
-
-        .file-preview {
-            background: #222;
-            height: 75%;
-            width: 100%;
-            display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             color: white;
-            font-size: 10px;
-            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 26, 255, 0.4);
+            
+            /* Textura de "sujeira" usando gradiente CSS puro */
+            background-image: 
+                radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.2) 100%),
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px);
         }
-        
-        .file-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-        .file-name {
-            background: #0055ff;
-            color: white;
-            font-size: 8px;
+        /* RABISCOS DA BORDA (Feitos com texto repetido) */
+        .rabisco-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Deixa clicar através */
+            z-index: 1;
+        }
+
+        .rabisco {
+            position: absolute;
+            font-family: 'Brush Script MT', 'Comic Sans MS', cursive; /* Fonte de mão */
+            font-size: 40px;
+            color: #fff; /* Branco igual a imagem */
+            line-height: 0.8;
+            white-space: nowrap;
+            opacity: 0.9;
+        }
+
+        /* Posicionando os rabiscos na "mão" */
+        .r-top { top: -20px; left: -20px; transform: rotate(-5deg); font-size: 60px; }
+        .r-right { top: 50px; right: -40px; transform: rotate(90deg); font-size: 50px; }
+        .r-bottom { bottom: -10px; right: -10px; transform: rotate(-2deg); font-size: 55px; }
+        .r-left { bottom: 100px; left: -30px; transform: rotate(-85deg); font-size: 50px; }
+
+        /* Estilo "preto borrado" dos rabiscos do fundo da ref */
+        .rabisco-black {
+            color: #000;
+            z-index: 0;
+            font-size: 100px;
+            opacity: 0.3;
+        }
+
+        /* CONTEÚDO DO MEIO */
+        .content {
+            z-index: 10;
             text-align: center;
-            height: 18%;
-            margin-top: 2px;
-            border-radius: 2px;
-            display: flex; align-items: center; justify-content: center;
-            font-family: monospace;
+            width: 80%;
+            border: 2px solid transparent; /* Só pra segurar layout */
         }
 
-        /* POSICIONAMENTO MANUAL DOS CARDS (Baseado na sua imagem) */
-        
-        /* Topo Esquerda (lari_equilibrio) */
-        .pos-1 { top: 12%; left: 10%; transform: rotate(-5deg); }
-        
-        /* Topo Direita (labnine) */
-        .pos-2 { top: 8%; right: 25%; transform: rotate(3deg); }
-        
-        /* Direita Meio (atlanta) */
-        .pos-3 { top: 25%; right: 8%; transform: rotate(5deg); }
-        
-        /* Esquerda Meio (collab) */
-        .pos-4 { top: 55%; left: 5%; transform: rotate(-8deg); }
-        
-        /* Base Direita (bianca) */
-        .pos-5 { bottom: 10%; right: 10%; transform: rotate(4deg); }
-        
-        /* Base Esquerda (diaz) */
-        .pos-6 { bottom: 12%; left: 15%; transform: rotate(-2deg); }
+        /* LOGO FAKE NO TOPO */
+        .top-tag {
+            background: #fff;
+            color: #001aff;
+            display: inline-block;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 12px;
+            transform: skewX(-10deg); /* Inclina a caixinha */
+            margin-bottom: 40px;
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        /* TÍTULO PRINCIPAL ESTICADO (A alma do design) */
+        h1 {
+            font-family: 'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+            font-size: 60px;
+            text-transform: uppercase;
+            line-height: 0.85;
+            letter-spacing: -2px;
+            transform: scaleY(1.6); /* ESTICA A FONTE PRA CIMA */
+            margin-bottom: 30px; /* Espaço por causa do esticamento */
+        }
+
+        /* TEXTO DE APOIO */
+        p.desc {
+            font-family: 'Arial Narrow', sans-serif;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-top: 20px;
+            line-height: 1.4;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* TEXTO PEQUENO RODAPÉ */
+        .footer-text {
+            margin-top: 40px;
+            font-size: 10px;
+            border: 1px solid white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* DESTAQUE DE PALAVRAS */
+        .highlight {
+            color: #000; /* Texto preto */
+            text-shadow: 
+                -1px -1px 0 #fff,  
+                1px -1px 0 #fff,
+                -1px 1px 0 #fff,
+                1px 1px 0 #fff; /* Borda branca fake */
+        }
 
     </style>
 </head>
 <body>
 
-    <div class="mockup-scene">
+    <div class="poster">
         
-        <img src="original.jpg" class="bg-image" alt="Cadeira Fundo">
+        <div class="rabisco-container">
+            <div class="rabisco rabisco-black" style="top: -50px; left: 0;">BASE BASE</div>
+            <div class="rabisco rabisco-black" style="bottom: 0; right: 0;">PROJETOS</div>
 
-        <div class="poster-container">
-            <div class="poster-content">
-                <div class="text-block">
-                    <span>BASE</span>
-                    <span>AGÊNCIA</span>
-                    <span>PROJETOS</span>
-                    <span>DESTAQUE</span>
-                    <span>OUTUBRO</span>
-                </div>
+            <div class="rabisco r-top">BASE AGÊNCIA BASE AGÊNCIA</div>
+            <div class="rabisco r-right">DESTAQUE DESTAQUE DESTAQUE</div>
+            <div class="rabisco r-bottom">OUTUBRO /// OUTUBRO ///</div>
+            <div class="rabisco r-left">PROJETOS PROJETOS</div>
+            
+            <div class="rabisco" style="bottom: 150px; right: 20px; font-size: 80px; transform: rotate(15deg);">X</div>
+        </div>
 
-                <div class="handwritten">
-                    <span class="blue-tag">#feitos</span><br>
-                    <span class="blue-tag" style="margin-left: 30px;">aqui!</span>
-                </div>
+        <div class="content">
+            <div class="top-tag">BASE DIGITAL</div>
+
+            <h1>
+                PROJETOS<br>
+                DE <span class="highlight">OUTUBRO</span><br>
+                NA BASE!
+            </h1>
+
+            <p class="desc">
+                CONFIRA OS DESTAQUES DO MÊS: <br>
+                BRANDING, SOCIAL MEDIA <br>
+                E LANDING PAGES.
+            </p>
+
+            <div class="footer-text">
+                &#9993; CONTATO: @BASE.AGENCIA
             </div>
-        </div>
-
-        <div class="file-card pos-1">
-            <div class="file-preview" style="background:#ff4500">BRAND</div>
-            <div class="file-name">base_v1.jpg</div>
-        </div>
-
-        <div class="file-card pos-2">
-            <div class="file-preview" style="background:#fff; color:#000">UGC</div>
-            <div class="file-name">ugc_ref.mp4</div>
-        </div>
-
-        <div class="file-card pos-3">
-            <div class="file-preview" style="background:#6a0dad">SOCIAL</div>
-            <div class="file-name">post_insta.png</div>
-        </div>
-
-        <div class="file-card pos-4">
-            <div class="file-preview" style="background:#00c853">SITE</div>
-            <div class="file-name">lp_vendas.html</div>
-        </div>
-
-        <div class="file-card pos-5">
-            <div class="file-preview" style="background:#2962ff">ADS</div>
-            <div class="file-name">trafego.jpg</div>
-        </div>
-
-        <div class="file-card pos-6">
-            <div class="file-preview" style="background:#d50000">CRIATIVO</div>
-            <div class="file-name">ideia_final.ai</div>
         </div>
 
     </div>
