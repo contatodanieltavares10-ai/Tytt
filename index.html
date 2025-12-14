@@ -1,191 +1,101 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>Colagem Arquitetura Editorial</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+import cv2
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
-}
+def criar_mockup_completo():
+    # --- CONFIGURAÇÕES (Edite aqui) ---
+    caminho_imagem_fundo = "outdoor.jpg"  # Sua foto do outdoor
+    texto_mockup = "BASE AGÊNCIA"
+    
+    # Coordenadas dos 4 cantos do outdoor na SUA foto original
+    # Ordem: [Topo-Esquerdo, Topo-Direito, Base-Direita, Base-Esquerda]
+    # Você precisa descobrir esses pixels na sua imagem (use o Paint para ver)
+    coordenadas_outdoor = np.float32([
+        [225, 130],  # Ponto 1: Superior Esquerdo
+        [580, 180],  # Ponto 2: Superior Direito
+        [580, 450],  # Ponto 3: Inferior Direito
+        [225, 520]   # Ponto 4: Inferior Esquerdo
+    ])
+    
+    # -----------------------------------------------------------
+    # PASSO 1: CRIAR A ARTE DIGITAL (Usando PILLOW)
+    # -----------------------------------------------------------
+    largura_arte, altura_arte = 800, 400
+    cor_laranja = (255, 102, 0) # RGB
+    
+    # Cria imagem laranja
+    img_pil = Image.new('RGB', (largura_arte, altura_arte), color=cor_laranja)
+    draw = ImageDraw.Draw(img_pil)
+    
+    # Configura a fonte (tenta Arial, senão usa padrão)
+    try:
+        font = ImageFont.truetype("arial.ttf", 60)
+    except IOError:
+        font = ImageFont.load_default()
+        print("Aviso: Fonte Arial não encontrada, usando padrão.")
 
-body {
-  background: #0b0b0b;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  color: #fff;
-}
+    # Centraliza o texto
+    bbox = draw.textbbox((0, 0), texto_mockup, font=font)
+    w_texto, h_texto = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    pos_x = (largura_arte - w_texto) / 2
+    pos_y = (altura_arte - h_texto) / 2
+    
+    # Escreve o texto em branco
+    draw.text((pos_x, pos_y), texto_mockup, font=font, fill=(255, 255, 255))
+    
+    # Converte do Pillow (RGB) para OpenCV (BGR) para podermos processar
+    img_arte = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
-/* TEXTO DE FUNDO */
-.background-text {
-  position: absolute;
-  inset: 0;
-  font-size: 72px;
-  font-weight: 900;
-  letter-spacing: 4px;
-  color: rgba(255,255,255,0.05);
-  line-height: 1.2;
-  padding: 40px;
-  z-index: 1;
-  pointer-events: none;
-}
+    # -----------------------------------------------------------
+    # PASSO 2: APLICAR PERSPECTIVA (Usando OPENCV)
+    # -----------------------------------------------------------
+    img_fundo = cv2.imread(caminho_imagem_fundo)
+    if img_fundo is None:
+        print("Erro: Não encontrei a imagem 'outdoor.jpg'.")
+        return
 
-/* CANVAS */
-.canvas {
-  position: relative;
-  width: 1200px;
-  height: 820px;
-  z-index: 2;
-}
+    h_bg, w_bg = img_fundo.shape[:2]
 
-/* CARDS */
-.card {
-  position: absolute;
-  border: 10px solid #fff;
-  background: #fff;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-  overflow: hidden;
-}
+    # Define os cantos da arte plana (origem)
+    pts_src = np.float32([
+        [0, 0],                       # Topo-Esq
+        [largura_arte, 0],            # Topo-Dir
+        [largura_arte, altura_arte],  # Base-Dir
+        [0, altura_arte]              # Base-Esq
+    ])
 
-.card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+    # Calcula a matriz de transformação (Matemática mágica da perspectiva)
+    matriz = cv2.getPerspectiveTransform(pts_src, coordenadas_outdoor)
 
-/* POSIÇÕES DAS IMAGENS */
-.img1 {
-  width: 430px;
-  height: 560px;
-  top: 40px;
-  left: 40px;
-  transform: rotate(-6deg);
-}
+    # Deforma a arte laranja para caber na perspectiva
+    img_warped = cv2.warpPerspective(img_arte, matriz, (w_bg, h_bg))
 
-.img2 {
-  width: 400px;
-  height: 500px;
-  top: 20px;
-  right: 40px;
-  transform: rotate(7deg);
-}
+    # Cria uma máscara (o formato do outdoor em branco sobre fundo preto)
+    mask = np.zeros((h_bg, w_bg), dtype=np.uint8)
+    cv2.fillConvexPoly(mask, coordenadas_outdoor.astype(int), 255)
 
-.img3 {
-  width: 380px;
-  height: 450px;
-  bottom: 40px;
-  right: 80px;
-  transform: rotate(-4deg);
-}
+    # Inverte a máscara
+    mask_inv = cv2.bitwise_not(mask)
 
-.img4 {
-  width: 360px;
-  height: 420px;
-  bottom: 80px;
-  left: 120px;
-  transform: rotate(6deg);
-}
+    # "Recorta" o buraco do outdoor na foto original
+    fundo_com_buraco = cv2.bitwise_and(img_fundo, img_fundo, mask=mask_inv)
+    
+    # "Recorta" apenas a arte deformada
+    arte_recortada = cv2.bitwise_and(img_warped, img_warped, mask=mask)
 
-/* TEXTO CENTRAL */
-.text-card {
-  width: 440px;
-  height: 440px;
-  background: #1f4fff;
-  color: #fff;
-  padding: 36px;
-  top: 190px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-2deg);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+    # Soma as duas imagens
+    resultado_final = cv2.add(fundo_com_buraco, arte_recortada)
 
-.text-card h1 {
-  font-size: 34px;
-  line-height: 1.1;
-  font-weight: 900;
-  text-transform: uppercase;
-}
+    # -----------------------------------------------------------
+    # PASSO 3: MOSTRAR E SALVAR
+    # -----------------------------------------------------------
+    cv2.imshow("Mockup BASE AGENCIA", resultado_final)
+    cv2.imwrite("mockup_base.jpg", resultado_final)
+    print("Sucesso! Imagem salva como 'mockup_base.jpg'")
+    
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-.text-card h1 span {
-  display: block;
-  margin-top: 12px;
-}
+if __name__ == "__main__":
+    criar_mockup_completo()
 
-.highlight {
-  font-size: 40px;
-}
-
-.underline {
-  width: 90px;
-  height: 4px;
-  background: #fff;
-  margin-top: 22px;
-}
-
-/* RESPONSIVO */
-@media (max-width: 1000px) {
-  .canvas {
-    transform: scale(0.85);
-  }
-}
-
-@media (max-width: 700px) {
-  .canvas {
-    transform: scale(0.65);
-  }
-}
-</style>
-</head>
-
-<body>
-
-<!-- TEXTO FANTASMA DE FUNDO -->
-<div class="background-text">
-ARQUITETURA VISUAL — DESIGN — ESTRUTURA — PROJETO — CONSTRUÇÃO — URBANO —<br>
-ARQUITETURA VISUAL — DESIGN — ESTRUTURA — PROJETO — CONSTRUÇÃO — URBANO —<br>
-ARQUITETURA VISUAL — DESIGN — ESTRUTURA — PROJETO — CONSTRUÇÃO — URBANO —
-</div>
-
-<div class="canvas">
-
-  <div class="card img1">
-    <img src="https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=1200&q=80">
-  </div>
-
-  <div class="card img2">
-    <img src="https://images.unsplash.com/photo-1486308510493-aa64833637b9?auto=format&fit=crop&w=1200&q=80">
-  </div>
-
-  <div class="card img3">
-    <img src="https://images.unsplash.com/photo-1529429617124-95b109e86bb8?auto=format&fit=crop&w=1200&q=80">
-  </div>
-
-  <div class="card img4">
-    <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80">
-  </div>
-
-  <div class="card text-card">
-    <h1>
-      Como eu vou entregar
-      <span class="highlight">Arquitetura Visual</span>
-      se esse é o mínimo de
-      <span>estrutura que eu uso</span>
-      em um projeto?
-    </h1>
-    <div class="underline"></div>
-  </div>
-
-</div>
-
-</body>
-</html>
