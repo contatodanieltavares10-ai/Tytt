@@ -1,166 +1,208 @@
-import cv2
-import numpy as np
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup BASE Agência</title>
+    <style>
+        /* --- CONFIGURAÇÕES GERAIS --- */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
+            overflow: hidden;
+        }
 
-def mudar_cor_cadeira_para_preto(img):
-    """
-    Detecta azul e reduz a saturação e brilho para simular preto,
-    mantendo a textura (sombras/luzes) do plástico.
-    """
-    # 1. Converter para espaço de cor HSV
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    
-    # 2. Definir o range de cor AZUL (no OpenCV o Hue vai de 0 a 180)
-    # Azul geralmente está entre 90 e 130
-    lower_blue = np.array([90, 50, 50])
-    upper_blue = np.array([130, 255, 255])
-    
-    # 3. Criar máscara (quais pixels são azuis?)
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
-    
-    # 4. Alterar os pixels azuis
-    # Onde a máscara for > 0 (azul detectado):
-    
-    # Tira a saturação (deixa cinza)
-    # hsv[:, :, 1] é o canal de Saturação
-    hsv[:, :, 1] = np.where(mask > 0, 0, hsv[:, :, 1])
-    
-    # Reduz o brilho (Value) para ficar escuro (preto), mas não breu total
-    # Multiplicamos por 0.25 (25% do brilho original)
-    hsv[:, :, 2] = np.where(mask > 0, (hsv[:, :, 2] * 0.25).astype('uint8'), hsv[:, :, 2])
-    
-    # 5. Voltar para BGR
-    img_nova = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-    return img_nova
+        /* Container principal que segura a imagem e a arte */
+        .scene {
+            position: relative;
+            width: 100%;
+            max-width: 800px; /* Limita o tamanho na tela */
+            aspect-ratio: 3 / 4; /* Proporção da foto original */
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
 
-def criar_poster_opencv(largura, altura):
-    """
-    Cria a imagem do cartaz (Laranja com texto branco) usando puramente OpenCV.
-    """
-    # Criar tela preta
-    poster = np.zeros((altura, largura, 3), dtype=np.uint8)
-    
-    # Pintar de Laranja BASE (BGR: Blue, Green, Red) -> Laranja é muito Red, médio Green, pouco Blue
-    # Laranja aprox: R=255, G=80, B=0 -> OpenCV usa BGR -> (0, 80, 255)
-    poster[:] = (0, 80, 255)
-    
-    # Configuração de Fonte
-    fonte = cv2.FONT_HERSHEY_SIMPLEX
-    cor_texto = (255, 255, 255) # Branco
-    cor_preta = (10, 10, 10)    # Preto
-    
-    # Escrever textos (cv2.putText não centraliza automático, ajustamos no 'olhômetro' X, Y)
-    # Sintaxe: imagem, texto, (x,y), fonte, tamanho, cor, espessura
-    
-    # Título Grande
-    cv2.putText(poster, "BASE", (50, 150), fonte, 4.5, cor_texto, 15)
-    cv2.putText(poster, "AGENCIA", (50, 280), fonte, 3.5, cor_texto, 12)
-    
-    # Desenhar acento no E manualmente (já que font hershey não tem acento bom)
-    cv2.line(poster, (280, 190), (300, 170), cor_texto, 8) # Perna esq do acento
-    cv2.line(poster, (300, 170), (320, 190), cor_texto, 8) # Perna dir do acento
-    
-    # Subtítulos
-    cv2.putText(poster, "PROJETOS", (50, 450), fonte, 3.0, cor_texto, 10)
-    cv2.putText(poster, "DESTAQUE", (50, 580), fonte, 3.0, cor_texto, 10)
-    cv2.putText(poster, "OUTUBRO", (50, 710), fonte, 3.0, cor_texto, 10)
-    
-    # Hashtag estilo manuscrito (simulado com fonte itálica do cv2)
-    fonte_mao = cv2.FONT_HERSHEY_COMPLEX_SMALL
-    cv2.putText(poster, "#FEITOS", (150, 900), fonte_mao, 3.0, cor_preta, 6)
-    cv2.putText(poster, "AQUI!", (300, 1000), fonte_mao, 3.0, cor_preta, 6)
-    
-    return poster
+        /* --- 1. A IMAGEM DE FUNDO (CADEIRA) --- */
+        .background-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
 
-def desenhar_card(img, x, y, texto, cor_icone):
-    """
-    Desenha um card flutuante direto na imagem principal usando primitivas do OpenCV
-    """
-    w, h = 130, 160
-    
-    # 1. Sombra (retângulo preto transparente simulado)
-    # No OpenCV puro, transparência é chata, então vamos desenhar um cinza escuro sólido deslocado
-    cv2.rectangle(img, (x+5, y+5), (x+w+5, y+h+5), (30, 30, 30), -1)
-    
-    # 2. Borda Branca/Cinza
-    cv2.rectangle(img, (x, y), (x+w, y+h), (50, 50, 50), -1) # Fundo Cinza Dark
-    cv2.rectangle(img, (x, y), (x+w, y+h), (100, 100, 100), 2) # Borda
-    
-    # 3. Área colorida interna (o "arquivo")
-    cv2.rectangle(img, (x+10, y+10), (x+w-10, y+h-40), cor_icone, -1)
-    
-    # 4. Etiqueta azul embaixo
-    cv2.rectangle(img, (x, y+h-25), (x+w, y+h), (200, 100, 0), -1) # Azul BGR
-    
-    # 5. Texto pequeno
-    cv2.putText(img, texto, (x+10, y+h-8), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,255,255), 1)
+            /* A MÁGICA: Transforma Azul em Preto via CSS */
+            /* grayscale: Tira a cor (vira cinza) */
+            /* brightness: Escurece para virar preto */
+            /* contrast: Aumenta o brilho do reflexo do plástico */
+            filter: grayscale(100%) brightness(30%) contrast(120%);
+        }
 
-# --- FLUXO PRINCIPAL ---
+        /* --- 2. O PÔSTER LARANJA (PERSPECTIVA) --- */
+        .poster-container {
+            position: absolute;
+            z-index: 2;
+            
+            /* Ajuste a posição para cair no encosto da cadeira */
+            top: 18%; 
+            left: 28%;
+            width: 50%;
+            height: 65%;
 
-# 1. Carregar imagem
-img = cv2.imread("original.jpg") # SUA FOTO AQUI
-if img is None:
-    print("Erro: Imagem 'original.jpg' não encontrada.")
-    exit()
+            /* Ativa o ambiente 3D */
+            perspective: 1000px;
+        }
 
-# 2. Mudar cor da cadeira (Azul -> Preto)
-print("Trocando cor da cadeira...")
-img_processada = mudar_cor_cadeira_para_preto(img)
+        .poster {
+            width: 100%;
+            height: 100%;
+            background-color: #FF4500; /* Laranja BASE */
+            padding: 20px;
+            box-sizing: border-box;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 5px 10px 30px rgba(0,0,0,0.5); /* Sombra realista */
 
-# 3. Gerar o Pôster da Agência
-print("Gerando arte vetorial...")
-h_poster, w_poster = 1100, 800
-poster = criar_poster_opencv(w_poster, h_poster)
+            /* AJUSTE FINO DA PERSPECTIVA: Mude os graus aqui se ficar torto */
+            transform: rotateX(5deg) rotateY(-2deg) rotateZ(-3deg);
+            transform-origin: center center;
+        }
 
-# 4. Aplicar Perspectiva
-# Pontos de origem (cantos do poster plano)
-pts_src = np.float32([[0,0], [w_poster,0], [w_poster,h_poster], [0,h_poster]])
+        /* Tipografia do Pôster */
+        .poster h1 {
+            font-size: 3.5rem; /* Tamanho responsivo */
+            line-height: 0.9;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
 
-# Pontos de destino (onde colar na imagem) - AJUSTE ESTES NUMEROS COM O PAINT
-# Baseado na sua imagem aproximada:
-pts_dst = np.float32([
-    [260, 180],  # Topo Esq
-    [780, 220],  # Topo Dir
-    [750, 900],  # Base Dir
-    [220, 850]   # Base Esq
-])
+        .poster .handwritten {
+            font-family: 'Brush Script MT', cursive; /* Fonte manuscrita do sistema */
+            color: #000; /* Preto para contraste no laranja */
+            font-size: 3rem;
+            margin-top: 20px;
+            transform: rotate(-5deg);
+        }
 
-h_bg, w_bg = img_processada.shape[:2]
-matrix = cv2.getPerspectiveTransform(pts_src, pts_dst)
-poster_warped = cv2.warpPerspective(poster, matrix, (w_bg, h_bg))
+        .poster .sub-hand {
+            font-family: 'Brush Script MT', cursive;
+            color: #000;
+            font-size: 2.5rem;
+            margin-top: -10px;
+            transform: rotate(-5deg);
+        }
 
-# 5. Mesclar (Blend)
-# Criar máscara da área do poster
-mask_poster = np.zeros((h_bg, w_bg), dtype=np.uint8)
-cv2.fillConvexPoly(mask_poster, pts_dst.astype(int), 255)
+        /* --- 3. CARDS FLUTUANTES --- */
+        .card {
+            position: absolute;
+            background: #fff;
+            width: 80px;
+            height: 100px;
+            z-index: 3;
+            border-radius: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
 
-# Inverter máscara
-mask_fundo = cv2.bitwise_not(mask_poster)
+        /* Topo do card (Imagem fake) */
+        .card-img {
+            flex: 1;
+            background-color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #fff;
+        }
+        
+        /* Rodapé do card (Nome do arquivo) */
+        .card-footer {
+            height: 20px;
+            background-color: #007bff; /* Azul padrão tag */
+            color: white;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
 
-# Recortar buraco na imagem da cadeira
-fundo_bg = cv2.bitwise_and(img_processada, img_processada, mask=mask_fundo)
+        /* Posições individuais dos cards (Ajuste top/left conforme sua foto) */
+        .c1 { top: 15%; left: 15%; transform: rotate(-10deg); }
+        .c2 { top: 12%; right: 20%; transform: rotate(5deg); }
+        .c3 { top: 35%; right: 10%; transform: rotate(15deg); }
+        .c4 { bottom: 20%; left: 10%; transform: rotate(-5deg); }
+        .c5 { bottom: 15%; right: 15%; transform: rotate(8deg); }
 
-# Recortar apenas o poster warpado
-poster_fg = cv2.bitwise_and(poster_warped, poster_warped, mask=mask_poster)
+        /* Cores dos cards para variedade */
+        .c1 .card-img { background: #FF4500; } /* Laranja */
+        .c2 .card-img { background: #222; }    /* Preto */
+        .c3 .card-img { background: #6f42c1; } /* Roxo */
+        .c4 .card-img { background: #28a745; } /* Verde */
 
-# Somar
-resultado = cv2.add(fundo_bg, poster_fg)
+        /* Responsividade para celular */
+        @media (max-width: 600px) {
+            .poster h1 { font-size: 10vw; }
+            .poster .handwritten { font-size: 8vw; }
+            .card { width: 15vw; height: 18vw; }
+        }
+    </style>
+</head>
+<body>
 
-# 6. Adicionar Mockups Flutuantes (Desenhando direto no resultado)
-print("Desenhando cards...")
-# Cores em BGR: (Blue, Green, Red)
-desenhar_card(resultado, 140, 140, "BRAND.JPG", (0, 100, 255))   # Laranja
-desenhar_card(resultado, 620, 110, "POST.PNG", (50, 50, 50))    # Cinza
-desenhar_card(resultado, 750, 320, "UI.FIG", (200, 0, 150))     # Roxo
-desenhar_card(resultado, 80, 560, "SITE.HTML", (50, 200, 50))   # Verde
-desenhar_card(resultado, 710, 760, "ADS.JPG", (240, 240, 240))  # Branco
+    <div class="scene">
+        <img src="original.jpg" class="background-image" alt="Cadeira Fundo">
 
-# 7. Salvar e Mostrar
-cv2.imwrite("resultado_base_cv_puro.jpg", resultado)
-print("Salvo como 'resultado_base_cv_puro.jpg'")
+        <div class="poster-container">
+            <div class="poster">
+                <h1>BASE<br>AGÊNCIA<br>PROJETOS<br>DESTAQUE<br>OUTUBRO</h1>
+                <div class="handwritten">#Feitos</div>
+                <div class="sub-hand">Aqui!</div>
+            </div>
+        </div>
 
-# Redimensionar para mostrar na tela (se a imagem for gigante)
-visualizacao = cv2.resize(resultado, (0,0), fx=0.5, fy=0.5)
-cv2.imshow("Mockup BASE", visualizacao)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+        <div class="card c1">
+            <div class="card-img">BRAND</div>
+            <div class="card-footer">brand.jpg</div>
+        </div>
+        
+        <div class="card c2">
+            <div class="card-img">SOCIAL</div>
+            <div class="card-footer">post.png</div>
+        </div>
+
+        <div class="card c3">
+            <div class="card-img">UI KIT</div>
+            <div class="card-footer">interface.fig</div>
+        </div>
+
+        <div class="card c4">
+            <div class="card-img">SITE</div>
+            <div class="card-footer">index.html</div>
+        </div>
+
+        <div class="card c5">
+            <div class="card-img" style="background:#fff; color:#000">ADS</div>
+            <div class="card-footer" style="background:#ccc; color:#000">ads.jpg</div>
+        </div>
+
+    </div>
+
+</body>
+</html>
 
