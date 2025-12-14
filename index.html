@@ -1,101 +1,166 @@
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 
-def criar_mockup_completo():
-    # --- CONFIGURAÇÕES (Edite aqui) ---
-    caminho_imagem_fundo = "outdoor.jpg"  # Sua foto do outdoor
-    texto_mockup = "BASE AGÊNCIA"
+def mudar_cor_cadeira_para_preto(img):
+    """
+    Detecta azul e reduz a saturação e brilho para simular preto,
+    mantendo a textura (sombras/luzes) do plástico.
+    """
+    # 1. Converter para espaço de cor HSV
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     
-    # Coordenadas dos 4 cantos do outdoor na SUA foto original
-    # Ordem: [Topo-Esquerdo, Topo-Direito, Base-Direita, Base-Esquerda]
-    # Você precisa descobrir esses pixels na sua imagem (use o Paint para ver)
-    coordenadas_outdoor = np.float32([
-        [225, 130],  # Ponto 1: Superior Esquerdo
-        [580, 180],  # Ponto 2: Superior Direito
-        [580, 450],  # Ponto 3: Inferior Direito
-        [225, 520]   # Ponto 4: Inferior Esquerdo
-    ])
+    # 2. Definir o range de cor AZUL (no OpenCV o Hue vai de 0 a 180)
+    # Azul geralmente está entre 90 e 130
+    lower_blue = np.array([90, 50, 50])
+    upper_blue = np.array([130, 255, 255])
     
-    # -----------------------------------------------------------
-    # PASSO 1: CRIAR A ARTE DIGITAL (Usando PILLOW)
-    # -----------------------------------------------------------
-    largura_arte, altura_arte = 800, 400
-    cor_laranja = (255, 102, 0) # RGB
+    # 3. Criar máscara (quais pixels são azuis?)
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
     
-    # Cria imagem laranja
-    img_pil = Image.new('RGB', (largura_arte, altura_arte), color=cor_laranja)
-    draw = ImageDraw.Draw(img_pil)
+    # 4. Alterar os pixels azuis
+    # Onde a máscara for > 0 (azul detectado):
     
-    # Configura a fonte (tenta Arial, senão usa padrão)
-    try:
-        font = ImageFont.truetype("arial.ttf", 60)
-    except IOError:
-        font = ImageFont.load_default()
-        print("Aviso: Fonte Arial não encontrada, usando padrão.")
-
-    # Centraliza o texto
-    bbox = draw.textbbox((0, 0), texto_mockup, font=font)
-    w_texto, h_texto = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    pos_x = (largura_arte - w_texto) / 2
-    pos_y = (altura_arte - h_texto) / 2
+    # Tira a saturação (deixa cinza)
+    # hsv[:, :, 1] é o canal de Saturação
+    hsv[:, :, 1] = np.where(mask > 0, 0, hsv[:, :, 1])
     
-    # Escreve o texto em branco
-    draw.text((pos_x, pos_y), texto_mockup, font=font, fill=(255, 255, 255))
+    # Reduz o brilho (Value) para ficar escuro (preto), mas não breu total
+    # Multiplicamos por 0.25 (25% do brilho original)
+    hsv[:, :, 2] = np.where(mask > 0, (hsv[:, :, 2] * 0.25).astype('uint8'), hsv[:, :, 2])
     
-    # Converte do Pillow (RGB) para OpenCV (BGR) para podermos processar
-    img_arte = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+    # 5. Voltar para BGR
+    img_nova = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    return img_nova
 
-    # -----------------------------------------------------------
-    # PASSO 2: APLICAR PERSPECTIVA (Usando OPENCV)
-    # -----------------------------------------------------------
-    img_fundo = cv2.imread(caminho_imagem_fundo)
-    if img_fundo is None:
-        print("Erro: Não encontrei a imagem 'outdoor.jpg'.")
-        return
-
-    h_bg, w_bg = img_fundo.shape[:2]
-
-    # Define os cantos da arte plana (origem)
-    pts_src = np.float32([
-        [0, 0],                       # Topo-Esq
-        [largura_arte, 0],            # Topo-Dir
-        [largura_arte, altura_arte],  # Base-Dir
-        [0, altura_arte]              # Base-Esq
-    ])
-
-    # Calcula a matriz de transformação (Matemática mágica da perspectiva)
-    matriz = cv2.getPerspectiveTransform(pts_src, coordenadas_outdoor)
-
-    # Deforma a arte laranja para caber na perspectiva
-    img_warped = cv2.warpPerspective(img_arte, matriz, (w_bg, h_bg))
-
-    # Cria uma máscara (o formato do outdoor em branco sobre fundo preto)
-    mask = np.zeros((h_bg, w_bg), dtype=np.uint8)
-    cv2.fillConvexPoly(mask, coordenadas_outdoor.astype(int), 255)
-
-    # Inverte a máscara
-    mask_inv = cv2.bitwise_not(mask)
-
-    # "Recorta" o buraco do outdoor na foto original
-    fundo_com_buraco = cv2.bitwise_and(img_fundo, img_fundo, mask=mask_inv)
+def criar_poster_opencv(largura, altura):
+    """
+    Cria a imagem do cartaz (Laranja com texto branco) usando puramente OpenCV.
+    """
+    # Criar tela preta
+    poster = np.zeros((altura, largura, 3), dtype=np.uint8)
     
-    # "Recorta" apenas a arte deformada
-    arte_recortada = cv2.bitwise_and(img_warped, img_warped, mask=mask)
-
-    # Soma as duas imagens
-    resultado_final = cv2.add(fundo_com_buraco, arte_recortada)
-
-    # -----------------------------------------------------------
-    # PASSO 3: MOSTRAR E SALVAR
-    # -----------------------------------------------------------
-    cv2.imshow("Mockup BASE AGENCIA", resultado_final)
-    cv2.imwrite("mockup_base.jpg", resultado_final)
-    print("Sucesso! Imagem salva como 'mockup_base.jpg'")
+    # Pintar de Laranja BASE (BGR: Blue, Green, Red) -> Laranja é muito Red, médio Green, pouco Blue
+    # Laranja aprox: R=255, G=80, B=0 -> OpenCV usa BGR -> (0, 80, 255)
+    poster[:] = (0, 80, 255)
     
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # Configuração de Fonte
+    fonte = cv2.FONT_HERSHEY_SIMPLEX
+    cor_texto = (255, 255, 255) # Branco
+    cor_preta = (10, 10, 10)    # Preto
+    
+    # Escrever textos (cv2.putText não centraliza automático, ajustamos no 'olhômetro' X, Y)
+    # Sintaxe: imagem, texto, (x,y), fonte, tamanho, cor, espessura
+    
+    # Título Grande
+    cv2.putText(poster, "BASE", (50, 150), fonte, 4.5, cor_texto, 15)
+    cv2.putText(poster, "AGENCIA", (50, 280), fonte, 3.5, cor_texto, 12)
+    
+    # Desenhar acento no E manualmente (já que font hershey não tem acento bom)
+    cv2.line(poster, (280, 190), (300, 170), cor_texto, 8) # Perna esq do acento
+    cv2.line(poster, (300, 170), (320, 190), cor_texto, 8) # Perna dir do acento
+    
+    # Subtítulos
+    cv2.putText(poster, "PROJETOS", (50, 450), fonte, 3.0, cor_texto, 10)
+    cv2.putText(poster, "DESTAQUE", (50, 580), fonte, 3.0, cor_texto, 10)
+    cv2.putText(poster, "OUTUBRO", (50, 710), fonte, 3.0, cor_texto, 10)
+    
+    # Hashtag estilo manuscrito (simulado com fonte itálica do cv2)
+    fonte_mao = cv2.FONT_HERSHEY_COMPLEX_SMALL
+    cv2.putText(poster, "#FEITOS", (150, 900), fonte_mao, 3.0, cor_preta, 6)
+    cv2.putText(poster, "AQUI!", (300, 1000), fonte_mao, 3.0, cor_preta, 6)
+    
+    return poster
 
-if __name__ == "__main__":
-    criar_mockup_completo()
+def desenhar_card(img, x, y, texto, cor_icone):
+    """
+    Desenha um card flutuante direto na imagem principal usando primitivas do OpenCV
+    """
+    w, h = 130, 160
+    
+    # 1. Sombra (retângulo preto transparente simulado)
+    # No OpenCV puro, transparência é chata, então vamos desenhar um cinza escuro sólido deslocado
+    cv2.rectangle(img, (x+5, y+5), (x+w+5, y+h+5), (30, 30, 30), -1)
+    
+    # 2. Borda Branca/Cinza
+    cv2.rectangle(img, (x, y), (x+w, y+h), (50, 50, 50), -1) # Fundo Cinza Dark
+    cv2.rectangle(img, (x, y), (x+w, y+h), (100, 100, 100), 2) # Borda
+    
+    # 3. Área colorida interna (o "arquivo")
+    cv2.rectangle(img, (x+10, y+10), (x+w-10, y+h-40), cor_icone, -1)
+    
+    # 4. Etiqueta azul embaixo
+    cv2.rectangle(img, (x, y+h-25), (x+w, y+h), (200, 100, 0), -1) # Azul BGR
+    
+    # 5. Texto pequeno
+    cv2.putText(img, texto, (x+10, y+h-8), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,255,255), 1)
+
+# --- FLUXO PRINCIPAL ---
+
+# 1. Carregar imagem
+img = cv2.imread("original.jpg") # SUA FOTO AQUI
+if img is None:
+    print("Erro: Imagem 'original.jpg' não encontrada.")
+    exit()
+
+# 2. Mudar cor da cadeira (Azul -> Preto)
+print("Trocando cor da cadeira...")
+img_processada = mudar_cor_cadeira_para_preto(img)
+
+# 3. Gerar o Pôster da Agência
+print("Gerando arte vetorial...")
+h_poster, w_poster = 1100, 800
+poster = criar_poster_opencv(w_poster, h_poster)
+
+# 4. Aplicar Perspectiva
+# Pontos de origem (cantos do poster plano)
+pts_src = np.float32([[0,0], [w_poster,0], [w_poster,h_poster], [0,h_poster]])
+
+# Pontos de destino (onde colar na imagem) - AJUSTE ESTES NUMEROS COM O PAINT
+# Baseado na sua imagem aproximada:
+pts_dst = np.float32([
+    [260, 180],  # Topo Esq
+    [780, 220],  # Topo Dir
+    [750, 900],  # Base Dir
+    [220, 850]   # Base Esq
+])
+
+h_bg, w_bg = img_processada.shape[:2]
+matrix = cv2.getPerspectiveTransform(pts_src, pts_dst)
+poster_warped = cv2.warpPerspective(poster, matrix, (w_bg, h_bg))
+
+# 5. Mesclar (Blend)
+# Criar máscara da área do poster
+mask_poster = np.zeros((h_bg, w_bg), dtype=np.uint8)
+cv2.fillConvexPoly(mask_poster, pts_dst.astype(int), 255)
+
+# Inverter máscara
+mask_fundo = cv2.bitwise_not(mask_poster)
+
+# Recortar buraco na imagem da cadeira
+fundo_bg = cv2.bitwise_and(img_processada, img_processada, mask=mask_fundo)
+
+# Recortar apenas o poster warpado
+poster_fg = cv2.bitwise_and(poster_warped, poster_warped, mask=mask_poster)
+
+# Somar
+resultado = cv2.add(fundo_bg, poster_fg)
+
+# 6. Adicionar Mockups Flutuantes (Desenhando direto no resultado)
+print("Desenhando cards...")
+# Cores em BGR: (Blue, Green, Red)
+desenhar_card(resultado, 140, 140, "BRAND.JPG", (0, 100, 255))   # Laranja
+desenhar_card(resultado, 620, 110, "POST.PNG", (50, 50, 50))    # Cinza
+desenhar_card(resultado, 750, 320, "UI.FIG", (200, 0, 150))     # Roxo
+desenhar_card(resultado, 80, 560, "SITE.HTML", (50, 200, 50))   # Verde
+desenhar_card(resultado, 710, 760, "ADS.JPG", (240, 240, 240))  # Branco
+
+# 7. Salvar e Mostrar
+cv2.imwrite("resultado_base_cv_puro.jpg", resultado)
+print("Salvo como 'resultado_base_cv_puro.jpg'")
+
+# Redimensionar para mostrar na tela (se a imagem for gigante)
+visualizacao = cv2.resize(resultado, (0,0), fx=0.5, fy=0.5)
+cv2.imshow("Mockup BASE", visualizacao)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
